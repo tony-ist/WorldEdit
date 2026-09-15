@@ -132,6 +132,6 @@ public class FabricWorldEdit extends CoreMcMod implements ModInitializer {
             LOGGER.warn("Failed to load Fabric permissions provider. Falling back to Minecraft", e);
         }
 
-        return new FabricPermissionsProvider(provider);
+        return provider;
     }
 }
