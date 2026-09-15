@@ -20,6 +20,7 @@
 package com.sk89q.worldedit;
 
 import com.google.common.collect.Iterables;
+import com.google.errorprone.annotations.InlineMe;
 import com.sk89q.jchronic.Chronic;
 import com.sk89q.jchronic.Options;
 import com.sk89q.jchronic.utils.Span;
@@ -110,12 +111,11 @@ public class LocalSession {
     private transient boolean useInventory;
     private transient com.sk89q.worldedit.world.snapshot.Snapshot snapshot;
     private transient SnapshotInfo snapshotExperimental;
-    private transient SideEffectSet sideEffectSet = SideEffectSet.defaults();
     private transient Mask mask;
     private transient ZoneId timezone = ZoneId.systemDefault();
     private transient BlockVector3 cuiTemporaryBlock;
     @SuppressWarnings("deprecation")
-    private transient EditSession.ReorderMode reorderMode = EditSession.ReorderMode.FAST;
+    private transient EditSession.ReorderMode reorderMode = EditSession.ReorderMode.MULTI_STAGE;
     private transient List<Countable<BlockState>> lastDistribution;
     private transient World worldOverride;
     private transient boolean tickingWatchdog = true;
@@ -130,6 +130,7 @@ public class LocalSession {
     private Boolean wandItemDefault;
     private String navWandItem;
     private Boolean navWandItemDefault;
+    private SideEffectSet sideEffectSet = SideEffectSet.defaults();
 
     /**
      * Construct the object.
@@ -1187,6 +1188,7 @@ public class LocalSession {
      */
     public void setSideEffectSet(SideEffectSet sideEffectSet) {
         this.sideEffectSet = sideEffectSet;
+        setDirty();
     }
 
     /**
@@ -1207,8 +1209,12 @@ public class LocalSession {
      * @deprecated Use {@link #setSideEffectSet(SideEffectSet)} with a specific set of side-effects instead.
      */
     @Deprecated
-    public void setFastMode(boolean fastMode) {
-        this.sideEffectSet = fastMode ? SideEffectSet.none() : SideEffectSet.defaults();
+    @InlineMe(
+        replacement = "this.setSideEffectSet(fastMode ? SideEffectSet.none() : SideEffectSet.defaults())",
+        imports = "com.sk89q.worldedit.util.SideEffectSet"
+    )
+    public final void setFastMode(boolean fastMode) {
+        setSideEffectSet(fastMode ? SideEffectSet.none() : SideEffectSet.defaults());
     }
 
     /**

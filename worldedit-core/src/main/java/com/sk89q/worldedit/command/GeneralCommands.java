@@ -222,10 +222,10 @@ public class GeneralCommands {
         }
 
         if (hasFastMode) {
-            session.setFastMode(false);
+            session.setSideEffectSet(SideEffectSet.defaults());
             actor.printInfo(TranslatableComponent.of("worldedit.fast.disabled"));
         } else {
-            session.setFastMode(true);
+            session.setSideEffectSet(SideEffectSet.none());
             actor.printInfo(TranslatableComponent.of("worldedit.fast.enabled"));
         }
     }
@@ -235,6 +235,7 @@ public class GeneralCommands {
         desc = "Toggle side effects for performance",
         descFooter = "Note that this command is GOING to change in the future."
             + " Do not depend on the exact format of this command yet."
+            + " Also, in this fork of worldedit, these settings are saved persistently."
     )
     @CommandPermissions("worldedit.perf")
     void perf(Actor actor, LocalSession session,

@@ -22,6 +22,7 @@ package com.sk89q.worldedit.command;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
@@ -73,7 +74,10 @@ import com.sk89q.worldedit.util.formatting.text.TextComponent;
 import com.sk89q.worldedit.util.formatting.text.TranslatableComponent;
 import com.sk89q.worldedit.world.RegenOptions;
 import com.sk89q.worldedit.world.World;
+import com.sk89q.worldedit.world.block.BaseBlock;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.generation.TreeType;
+import org.enginehub.linbus.tree.LinCompoundTag;
 import org.enginehub.piston.annotation.Command;
 import org.enginehub.piston.annotation.CommandContainer;
 import org.enginehub.piston.annotation.param.Arg;
@@ -610,7 +614,7 @@ public class RegionCommands {
                 SideEffectSet sideEffectSet) throws WorldEditException {
         if (sideEffectSet == null) {
             // Use defaults if none supplied.
-            sideEffectSet = SideEffectSet.defaults();
+            sideEffectSet = SideEffectSet.all();
         }
         RegionFunction apply = new ApplySideEffect(injectedWorld, sideEffectSet);
         if (session.getMask() != null) {
@@ -625,5 +629,54 @@ public class RegionCommands {
         Operations.complete(visitor);
 
         actor.printInfo(TranslatableComponent.of("worldedit.update"));
+    }
+
+
+
+
+    private BaseBlock gatewayToActor(Actor actor, LocalSession session) throws IncompleteRegionException {
+        BlockVector3 actorPos = session.getPlacementPosition(actor);
+
+        int[] exitGateway = {actorPos.x(), actorPos.y(), actorPos.z()};
+
+        LinCompoundTag.Builder gatewayTag = LinCompoundTag.builder();
+        gatewayTag.putIntArray("exit_portal", exitGateway);
+        gatewayTag.putByte("ExactTeleport", (byte) 1);
+        gatewayTag.putLong("Age", Long.MIN_VALUE);
+
+        return BlockTypes.END_GATEWAY.getDefaultState().toBaseBlock(gatewayTag.build());
+    }
+
+    @Command(
+        name = "/gateget",
+        desc = "Copies a gateway to your position"
+    )
+    @CommandPermissions("worldedit.endgates.get")
+    public void gateget(Actor actor, LocalSession session) throws IncompleteRegionException {
+
+        BlockVector3 zero = BlockVector3.ZERO;
+        Region region = new CuboidRegion(zero, zero);
+        BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
+        clipboard.setOrigin(zero);
+
+        BaseBlock gateway = gatewayToActor(actor, session);
+        clipboard.setBlock(zero, gateway);
+
+        session.setClipboard(new ClipboardHolder(clipboard));
+
+        BlockVector3 actorPos = session.getPlacementPosition(actor);
+        actor.printInfo(TextComponent.of("Copied end gateway to " + actorPos.x() + ", " + actorPos.y() + ", " + actorPos.z() + "."));
+    }
+
+    @Command(
+        name = "/gateset",
+        desc = "Sets selection to gateways to your position"
+    )
+    @CommandPermissions("worldedit.endgates.set")
+    @Logging(REGION)
+    public int gateset(Actor actor, LocalSession session, EditSession editSession, @Selection Region region) throws IncompleteRegionException {
+        BaseBlock gateway = gatewayToActor(actor, session);
+        return set(actor, editSession, region, gateway);
+
     }
 }

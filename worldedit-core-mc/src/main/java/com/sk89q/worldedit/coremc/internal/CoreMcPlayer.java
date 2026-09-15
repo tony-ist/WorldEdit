@@ -260,6 +260,11 @@ public class CoreMcPlayer extends AbstractPlayerActor {
     }
 
     @Override
+    public double getViewHeight() {
+        return player.getEyeHeight();
+    }
+
+    @Override
     public SessionKey getSessionKey() {
         return new SessionKeyImpl(player);
     }

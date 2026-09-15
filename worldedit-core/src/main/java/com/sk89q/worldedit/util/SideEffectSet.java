@@ -22,7 +22,15 @@ package com.sk89q.worldedit.util;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
@@ -38,6 +46,11 @@ public final class SideEffectSet {
         Arrays.stream(SideEffect.values())
             .filter(SideEffect::isExposed)
             .collect(Collectors.toMap(Function.identity(), state -> SideEffect.State.OFF))
+    );
+    private static final SideEffectSet ALL = new SideEffectSet(
+            Arrays.stream(SideEffect.values())
+                    .filter(SideEffect::isExposed)
+                    .collect(Collectors.toMap(Function.identity(), state -> SideEffect.State.ON))
     );
 
     static {
@@ -134,5 +147,22 @@ public final class SideEffectSet {
 
     public static SideEffectSet none() {
         return NONE;
+    }
+
+    public static SideEffectSet all() {
+        return ALL;
+    }
+
+    public static class GsonSerializer implements JsonSerializer<SideEffectSet>, JsonDeserializer<SideEffectSet> {
+
+        @Override
+        public SideEffectSet deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return new SideEffectSet(json.getAsInt());
+        }
+
+        @Override
+        public JsonElement serialize(SideEffectSet src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.sideEffectsBitmap);
+        }
     }
 }

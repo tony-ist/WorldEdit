@@ -226,7 +226,7 @@ public class EditSession implements Extent, AutoCloseable {
     private final @Nullable List<TracingExtent> tracingExtents;
 
     @Deprecated
-    private ReorderMode reorderMode = ReorderMode.FAST;
+    private ReorderMode reorderMode = ReorderMode.MULTI_STAGE;
 
     private Mask oldMask;
 
@@ -403,6 +403,7 @@ public class EditSession implements Extent, AutoCloseable {
                     sideEffectExtent.setPostEditSimulationEnabled(false);
                 }
                 reorderExtent.setEnabled(true);
+                batchingExtent.setEnabled(false);
                 yield dummyValue();
             }
             case FAST -> {
@@ -410,6 +411,7 @@ public class EditSession implements Extent, AutoCloseable {
                 if (reorderExtent != null) {
                     reorderExtent.setEnabled(false);
                 }
+                batchingExtent.setEnabled(true);
                 yield dummyValue();
             }
             case NONE -> {
@@ -419,6 +421,7 @@ public class EditSession implements Extent, AutoCloseable {
                 if (reorderExtent != null) {
                     reorderExtent.setEnabled(false);
                 }
+                batchingExtent.setEnabled(true);
                 yield dummyValue();
             }
         });
@@ -671,7 +674,7 @@ public class EditSession implements Extent, AutoCloseable {
         if (chunkBatchingExtent != null) {
             chunkBatchingExtent.setEnabled(false);
             assert batchingExtent != null : "same nullness as chunkBatchingExtent";
-            batchingExtent.setEnabled(true);
+            // batchingExtent.setEnabled(true);
         }
     }
 
