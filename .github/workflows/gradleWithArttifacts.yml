@@ -29,8 +29,9 @@ jobs:
       with:
         cache-read-only: ${{ !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/version/')) }}
 
+    # Only the Fabric module is built: this fork does not support the other platforms (Bukkit, NeoForge, Sponge, CLI) yet.
     - name: Execute Gradle build
-      run: ./gradlew build -s
+      run: ./gradlew :worldedit-fabric:build -s
 
     - uses: actions/upload-artifact@v4
       name: Archive Reports
