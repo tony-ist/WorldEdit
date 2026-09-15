@@ -2,6 +2,14 @@
     <img src="worldedit-logo.svg" alt="WorldEdit" width="400" /> 
 </h1>
 
+## Important notice
+
+This is a fork of [ShayHi's Edition of WorldEdit](https://github.com/LordChrom/WorldEdit/releases).
+
+In this fork a [vital bug](https://github.com/EngineHub/WorldEdit/issues/2516) is fixed and updated to MC version 26.1.2. However, only Fabric version of the mod is supported, other versions might fail in compilation. 
+
+## About
+
 **A Minecraft Map Editor... that runs in-game!**
 
 * With selections, schematics, copy and paste, brushes, and scripting!
