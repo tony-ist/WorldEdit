@@ -178,6 +178,8 @@ import org.enginehub.linbus.tree.LinTagType;
 import org.spigotmc.SpigotConfig;
 import org.spigotmc.WatchdogThread;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -211,6 +213,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
 
     private final Field serverWorldsField;
     private final Method getChunkFutureMethod;
+    private final MethodHandle fromData;
     private final Field chunkProviderExecutorField;
     private final PaperweightDataConverters dataFixer;
     private final Watchdog watchdog;
@@ -261,10 +264,10 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         try {
             Class.forName("org.spigotmc.WatchdogThread");
             watchdog = new SpigotWatchdog();
-        } catch (ClassNotFoundException | NoSuchFieldException e) {
+        } catch (ClassNotFoundException | NoSuchFieldException _) {
             try {
                 watchdog = new MojangWatchdog(((CraftServer) Bukkit.getServer()).getServer());
-            } catch (NoSuchFieldException ex) {
+            } catch (NoSuchFieldException _) {
                 watchdog = null;
             }
         }
@@ -273,9 +276,20 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         try {
             Class.forName("org.spigotmc.SpigotConfig");
             SpigotConfig.config.set("world-settings.worldeditregentempworld.verbose", false);
-        } catch (ClassNotFoundException ignored) {
+        } catch (ClassNotFoundException _) {
             // It's fine if we couldn't set it
         }
+
+        MethodHandle fromData;
+        try {
+            fromData = MethodHandles.lookup().unreflect(CraftBlockData.class.getMethod(
+                "fromData", net.minecraft.world.level.block.state.BlockState.class
+            ));
+        } catch (NoSuchMethodException | IllegalAccessException _) {
+            // This is purely for Spigot compatibility. It'll fail on Paper.
+            fromData = null;
+        }
+        this.fromData = fromData;
     }
 
     @Override
@@ -346,7 +360,15 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         int internalId = Block.getId(blockState);
         BlockState state = BlockStateIdAccess.getBlockStateById(internalId);
         if (state == null) {
-            state = BukkitAdapter.adapt(CraftBlockData.createData(blockState));
+            if (fromData != null) {
+                try {
+                    state = BukkitAdapter.adapt((CraftBlockData) fromData.invokeExact(blockState));
+                } catch (Throwable e) {
+                    throw new IllegalStateException("Failed to invoke CraftBlockData.fromData", e);
+                }
+            } else {
+                state = BukkitAdapter.adapt(blockState.asBlockData());
+            }
         }
 
         return state;
@@ -362,7 +384,9 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
 
     public net.minecraft.world.level.block.state.BlockState adapt(BlockState blockState) {
         int internalId = BlockStateIdAccess.getBlockStateId(blockState);
-        return Block.stateById(internalId);
+        return BlockStateIdAccess.isValidInternalId(internalId)
+                ? Block.stateById(internalId)
+                : ((CraftBlockData) BukkitAdapter.adapt(blockState)).getState();
     }
 
     @Override
@@ -608,9 +632,9 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         @Override
         public Property<?> load(net.minecraft.world.level.block.state.properties.Property state) {
             return switch (state) {
-                case net.minecraft.world.level.block.state.properties.BooleanProperty ignored ->
+                case net.minecraft.world.level.block.state.properties.BooleanProperty _ ->
                         new BooleanProperty(state.getName(), ImmutableList.copyOf(state.getPossibleValues()));
-                case net.minecraft.world.level.block.state.properties.EnumProperty ignored -> {
+                case net.minecraft.world.level.block.state.properties.EnumProperty _ -> {
                     if (state.getValueClass() == net.minecraft.core.Direction.class) {
                         yield new DirectionalProperty(state.getName(),
                                 (List<Direction>) state.getPossibleValues().stream().map(e -> Direction.valueOf(((StringRepresentable) e).getSerializedName().toUpperCase(Locale.ROOT))).toList());
@@ -618,7 +642,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
                     yield new EnumProperty(state.getName(),
                             (List<String>) state.getPossibleValues().stream().map(e -> ((StringRepresentable) e).getSerializedName()).toList());
                 }
-                case net.minecraft.world.level.block.state.properties.IntegerProperty ignored ->
+                case net.minecraft.world.level.block.state.properties.IntegerProperty _ ->
                         new IntegerProperty(state.getName(), ImmutableList.copyOf(state.getPossibleValues()));
                 default ->
                         throw new IllegalArgumentException("WorldEdit needs an update to support " + state.getClass().getSimpleName());
@@ -649,7 +673,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         structureBlock.setLevel(((CraftPlayer) player).getHandle().level());
         ((CraftPlayer) player).getHandle().connection.send(ClientboundBlockEntityDataPacket.create(
                 structureBlock,
-                (blockEntity, registryAccess) -> (net.minecraft.nbt.CompoundTag) fromNative(nbtData)
+                (_, _) -> (net.minecraft.nbt.CompoundTag) fromNative(nbtData)
         ));
     }
 
@@ -715,7 +739,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         PaperweightFakePlayer fakePlayer;
         try {
             fakePlayer = fakePlayers.get(worldServer);
-        } catch (ExecutionException ignored) {
+        } catch (ExecutionException _) {
             return false;
         }
         fakePlayer.setItemInHand(InteractionHand.MAIN_HAND, stack);
@@ -741,8 +765,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
 
     @Override
     public boolean canPlaceAt(World world, BlockVector3 position, BlockState blockState) {
-        int internalId = BlockStateIdAccess.getBlockStateId(blockState);
-        net.minecraft.world.level.block.state.BlockState blockData = Block.stateById(internalId);
+        net.minecraft.world.level.block.state.BlockState blockData = adapt(blockState);
         return blockData.canSurvive(((CraftWorld) world).getHandle(), new BlockPos(position.x(), position.y(), position.z()));
     }
 
@@ -809,7 +832,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
                 @SuppressWarnings("unchecked")
                 Map<String, World> map = (Map<String, World>) serverWorldsField.get(Bukkit.getServer());
                 map.remove("worldeditregentempworld");
-            } catch (IllegalAccessException ignored) {
+            } catch (IllegalAccessException _) {
                 // It's fine if we couldn't remove it
             }
             SafeFiles.tryHardToDeleteDir(tempDir);
@@ -1030,7 +1053,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
                     structureRegistry.wrapAsHolder(structure), originalWorld.dimension(), originalWorld.registryAccess(),
                     chunkManager.getGenerator(), chunkManager.getGenerator().getBiomeSource(), chunkManager.randomState(),
                     originalWorld.getStructureManager(), originalWorld.getSeed(), chunkPos, 0,
-                    proxyLevel.level(), biome -> true
+                    proxyLevel.level(), _ -> true
             );
 
             if (!structureStart.isValid()) {
@@ -1273,7 +1296,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         public void tick() {
             try {
                 tickField.set(server, Util.getMillis());
-            } catch (IllegalAccessException ignored) {
+            } catch (IllegalAccessException _) {
                 // It's fine if we couldn't set it
             }
         }

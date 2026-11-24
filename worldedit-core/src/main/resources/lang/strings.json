@@ -292,6 +292,11 @@
     "worldedit.command.permissions": "You are not permitted to do that. Are you in the right mode?",
     "worldedit.command.player-only": "This command must be used with a player.",
     "worldedit.command.error.report": "Please report this error: [See console]",
+    "worldedit.command.parse-error": "Argument parsing failed: {0}",
+    "worldedit.command.parse-error.invalid-escape-at-end": "Invalid escape at end of input",
+    "worldedit.command.parse-error.invalid-escaped-character": "Invalid escaped character: {0}",
+    "worldedit.command.parse-error.expected-whitespace-after-quote": "Expected whitespace after quote",
+    "worldedit.command.parse-error.unterminated-quote": "Unterminated quote",
     "worldedit.pastebin.uploading": "(Please wait... sending output to pastebin...)",
     "worldedit.session.cant-find-session": "Unable to find session for {0}",
     "worldedit.platform.no-file-dialog": "File dialogs are not supported in your environment.",
@@ -416,6 +421,12 @@
     "worldedit.error.parser.clipboard.missing-coordinates": "Clipboard offset needs x,y,z coordinates.",
     "worldedit.error.parser.player-only": "Input '{0}' requires a player!",
     "worldedit.error.parser.invalid-nbt": "Invalid NBT Data in input: '{0}'. Error: {1}",
+    "worldedit.error.parser.missing-type": "Missing block type in '{0}'",
+    "worldedit.error.parser.state-after-nbt": "Block state must come before NBT data, found '{0}'",
+    "worldedit.error.parser.duplicate-state": "Only one block state section is allowed, found '{0}'",
+    "worldedit.error.parser.duplicate-nbt": "Only one NBT section is allowed, found '{0}'",
+    "worldedit.error.parser.trailing-input": "Unexpected text after block: '{0}'",
+    "worldedit.error.parser.nbt-with-extra-data": "NBT data cannot be combined with '|' extra data, found '{0}'",
     "worldedit.error.disabled": "This functionality is disabled (see WorldEdit configuration).",
     "worldedit.error.unknown": "Unknown error occurred: {0}",
     "worldedit.error.missing-extent": "No Extent is known",
@@ -492,5 +503,6 @@
 
     "worldedit.version.bukkit.unsupported-adapter": "This WorldEdit version does not fully support your version of Bukkit. Block entities (e.g. chests) will be empty, block properties (e.g. rotation) will be missing, and other things may not work. Update WorldEdit to restore this functionality:\n{0}",
     "worldedit.bukkit.no-edit-without-adapter": "Editing on unsupported versions is disabled.",
-    "worldedit.bukkit.unsupported-on-folia": "This feature of WorldEdit is currently not supported on Folia."
+    "worldedit.bukkit.unsupported-on-folia": "This feature of WorldEdit is currently not supported on Folia.",
+    "worldedit.bukkit.unsupported-on-non-paper": "This feature of WorldEdit is currently not supported on non-Paper servers."
 }

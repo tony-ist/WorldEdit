@@ -125,13 +125,13 @@ public class FabricWorldEdit extends CoreMcMod implements ModInitializer {
             }
 
             provider = new LuckoFabricPermissionsProvider(provider);
-        } catch (ClassNotFoundException ignored) {
+        } catch (ClassNotFoundException _) {
             // fallback to vanilla
         } catch (Exception e) {
             // catch any exception to prevent crashing the server, but still print a warning
             LOGGER.warn("Failed to load Fabric permissions provider. Falling back to Minecraft", e);
         }
 
-        return provider;
+        return new FabricPermissionsProvider(provider);
     }
 }

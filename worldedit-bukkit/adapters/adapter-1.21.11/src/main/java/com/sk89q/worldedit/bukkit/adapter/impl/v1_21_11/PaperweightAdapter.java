@@ -222,8 +222,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
 
     public PaperweightAdapter() throws NoSuchFieldException, NoSuchMethodException {
         // A simple test
-        @SuppressWarnings({"ReturnValueIgnored", "unused"})
-        var unused = CraftServer.class.cast(Bukkit.getServer());
+        checkState(Bukkit.getServer() instanceof CraftServer, "Bukkit Server isn't a CraftServer");
 
         int dataVersion = SharedConstants.getCurrentVersion().dataVersion().version();
         if (dataVersion != Constants.DATA_VERSION_MC_1_21_11) {
@@ -335,7 +334,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
         int internalId = Block.getId(blockState);
         BlockState state = BlockStateIdAccess.getBlockStateById(internalId);
         if (state == null) {
-            state = BukkitAdapter.adapt(CraftBlockData.createData(blockState));
+            state = BukkitAdapter.adapt(CraftBlockData.fromData(blockState));
         }
 
         return state;
@@ -351,7 +350,9 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
 
     public net.minecraft.world.level.block.state.BlockState adapt(BlockState blockState) {
         int internalId = BlockStateIdAccess.getBlockStateId(blockState);
-        return Block.stateById(internalId);
+        return BlockStateIdAccess.isValidInternalId(internalId)
+                ? Block.stateById(internalId)
+                : ((CraftBlockData) BukkitAdapter.adapt(blockState)).getState();
     }
 
     @Override
@@ -724,8 +725,7 @@ public final class PaperweightAdapter implements BukkitImplAdapter {
 
     @Override
     public boolean canPlaceAt(World world, BlockVector3 position, BlockState blockState) {
-        int internalId = BlockStateIdAccess.getBlockStateId(blockState);
-        net.minecraft.world.level.block.state.BlockState blockData = Block.stateById(internalId);
+        net.minecraft.world.level.block.state.BlockState blockData = adapt(blockState);
         return blockData.canSurvive(((CraftWorld) world).getHandle(), new BlockPos(position.x(), position.y(), position.z()));
     }
 
